@@ -1,0 +1,303 @@
+//label example -- Just put the label in ()
+(example)
+
+//goto example
+@function.example       //Set A to the address of function.example
+0;jmp                   //JMP there
+
+//if-goto example
+@SP
+AM=M-1                  //Get SP and dereference
+D=M                     //Store popped value in D
+@function.example       //Get line number of label
+D;JNE                   //Jump if popped value is <> 0
+
+//function f k
+(filename.f)            //Label for f
+@k                      //Set A to the number k, of LCL variables
+D=A                     //Put the number of variables in D
+@SP
+M=M+D                   //Increment the SP for the number of variables.
+@k
+D=A-1                   //Set (k - 1) to D (because if 6 variables are LCL[0]...LCL[5]
+(filename.f_set)        //Mark a place to return to while setting locals
+@END_filename.f         //Load END_f for end of LCL initializations
+D;JLT                   //Jump if D is than 0 (all LCLs have been set.)
+@LCL                    //Get LCL[0] address
+A=D+M                   //Get LCL + offset; This will set the LCLs from LCL[k] to LCL[0]
+M=0                     //Set LCL[D] to 0
+D=D-1                   //Decrement D
+@filename.f_set
+0;JMP                   //JMP to the top of the loop to continue setting the LCLs
+(END_filename.f)
+
+//return
+@LCL        //Get address of FRAME
+D=M         //Put it in D register
+@R13
+M=D         //Store in temp R13***End of command 1
+@5
+D=A         //Put 5 in D register
+@LCL
+A=M-D       //Get address of LCL-5
+D=M         //Store value from LCL-5 (return address) in D
+@R14
+M=D         //Store return address in R14***End of command 2
+@SP
+A=M-1       //Get SP, dereference, and decrement to pop return value
+D=M         //Store return value in D
+@ARG
+A=M         //Dereference ARG
+M=D         //Pop value to ARG***End of command 3
+D=A         //Put ARG address into D
+@SP
+M=D+1       //Increment D (ARG) address and put it into SP***End of command 4
+@R13
+AM=M-1      //Get LCL and find LCL-1; store LCL-1 in R13
+D=M         //Store value of LCL-1 in D
+@THAT
+M=D         //Put that value in THAT**End of command 5
+@R13
+AM=M-1      //Get LCL and find LCL-2; store LCL-2 in R13
+D=M         //Store value of LCL-1 in D
+@THIS
+M=D         //Put that value in THIS**End of command 6
+@R13
+AM=M-1      //Get LCL and find LCL-3; store LCL-3 in R13
+D=M         //Store value of LCL-1 in D
+@ARG
+M=D         //Put that value in ARG**End of command 7
+@R13
+AM=M-1      //Get LCL and find LCL-4; store LCL-4 in R13
+D=M         //Store value of LCL-1 in D
+@LCL
+M=D         //Put that value in LCL**End of command 8
+@R14
+A=M         //Get jump address and put it in A
+0;JMP       //GOTO address
+
+
+//call f n
+@filename.f.counter     //Push the return address (to be declared below in label)
+D=A                     //Put value in D
+@SP
+A=M                     //Get the SP and dereference
+M=D                     //Push return address to stack
+@SP
+M=M+1                   //Increment SP ****finished instruction 1
+@LCL
+D=M                     //Store address of LCL in D
+@SP
+A=M                     //Get SP and dereference
+M=D                     //Push LCL address pointer onto stack
+@SP
+M=M+1                   //Increment SP ****finished instruction 2
+@ARG
+D=M                     //Store address of ARG in D
+@SP
+A=M                     //Get SP and dereference
+M=D                     //Push ARG address pointer onto stack
+@SP
+M=M+1                   //Increment SP ****finished instruction 3
+@THIS
+D=M                     //Store address of THIS in D
+@SP
+A=M                     //Get SP and dereference
+M=D                     //Push THIS address pointer onto stack
+@SP
+M=M+1                   //Increment SP ****finished instruction 4
+@THAT
+D=M                     //Store address of THAT in D
+@SP
+A=M                     //Get SP and dereference
+M=D                     //Push THAT address pointer onto stack
+@SP
+M=M+1                   //Increment SP ****finished instruction 5
+@SP
+D=M                     //Store SP address in D
+@n
+D=D-A                   //Decrement by n
+@5
+D=D-A                   //Decrement by 5
+@ARG
+M=D                     //Push D to ARG ****finished instruction 6
+@SP
+D=M                     //Dereference and get value for SP
+@LCL
+M=D                     //Put SP in LCL ****finished instruction 7
+@file.f
+0;JMP                   //Goto file.f
+(filename.f.counter)    //Set label for return value
+
+Bootstrap code
+@256
+D=A
+@0
+M=D
+@Sys.vm.Sys.init
+0;JMP
+
+
+//Add
+@SP         //Get stack pointer
+AM=M-1      //Decrement stack pointer and set A to M-1
+D=M         //Set D to the last value on the stack
+A=A-1       //Set pointer to last value - 1
+M=M+D       //Compute the sum and put in memory
+
+//Sub
+@SP         //Get stack point
+AM=M-1      //Decrement stack pointer and set A to M-1
+D=M         //Pop value to D
+A=A-1       //Decrement address
+M=M-D       //Push difference to stack
+
+//Neg
+D=0         //Set D register to 0
+@SP         //Get stack pointer
+A=M-1       //Set address to location SP-1
+M=D-M       //Set memory to 0-M (the negation)
+
+//-1 is true
+//EQ
+@SP             //Get SP
+AM=M-1          //Decrement SP and dereference
+D=M             //Put value in D register
+A=A-1           //Decrement address is A
+D=M-D           //Calculate difference Y - X
+@FALSE          //Put FALSE code address in A
+D;JNE           //If D is not equal (eq is false) jump to 0
+@SP             //If no jump set put SP in A
+A=M-1           //Put SP-1 in A
+M=-1            //Push -1 to SP-1 to set as true
+@CONTINUE       //Set CONTINUE in memory
+0;JMP           //Jump to CONTINUE
+(FALSE)         //If FALSE (we jumped here)
+@SP             //Get SP
+A=M-1           //Get address of SP-1 and store in A
+M=0             //Set that to 0
+(CONTINUE)      //...CONTINUE
+
+//GT
+@SP             //Get SP
+AM=M-1          //Decrement SP and dereference
+D=M             //Put value in D register
+A=A-1           //Decrement address is A
+D=M-D           //Calculate difference Y - X
+@FALSE          //Put FALSE code address in A
+D;JLE           //If D is negative jump to false
+@SP             //If no jump set put SP in A
+A=M-1           //Put SP-1 in A
+M=-1            //Push -1 to SP-1
+@CONTINUE       //Set CONTINUE in memory
+0;JMP           //Jump to CONTINUE
+(FALSE)         //If FALSE (we jumped here)
+@SP             //Get SP
+A=M-1           //Get address of SP-1 and store in A
+M=0             //Set that to 0
+(CONTINUE)      //...CONTINUE
+
+//LT
+@SP             //Get SP
+AM=M-1          //Decrement SP and dereference
+D=M             //Put value in D register
+A=A-1           //Decrement address is A
+D=M-D           //Calculate difference Y - X
+@FALSE          //Put FALSE code address in A
+D;JGE           //If D is positive jump to false
+@SP             //If no jump set put SP in A
+A=M-1           //Put SP-1 in A
+M=-1            //Push -1 to SP-1
+@CONTINUE       //Set CONTINUE in memory
+0;JMP           //Jump to CONTINUE
+(FALSE)         //If FALSE (we jumped here)
+@SP             //Get SP
+A=M-1           //Get address of SP-1 and store in A
+M=0             //Set that to 0
+(CONTINUE)      //...CONTINUE
+
+//AND
+@SP         //Get stack pointer
+AM=M-1      //Decrement stack pointer and set A to M-1
+D=M         //Set D to the last value on the stack
+A=A-1       //Set pointer to last value - 1
+M=D&M       //Compute the AND and put in memory
+
+//OR
+@SP         //Get stack pointer
+AM=M-1      //Decrement stack pointer and set A to M-1
+D=M         //Set D to the last value on the stack
+A=A-1       //Set pointer to last value - 1
+M=D|M       //Compute the OR and put in memory
+
+//NOT
+@SP             //Get SP
+A=M-1           //Get value of M-1 (SP-1) and put in A
+M=!M            //Set SP-1 to !M
+
+//Push constant 20
+@20             //Put 20 into A register
+D=A             //Put 20 into D register
+@SP             //Get SP
+A=M             //Dereference SP
+M=D             //Put D into memory at SP
+@SP
+M=M+1           //Increment SP
+
+//Push local/argument/this/that--example is for push local 3.
+@LCL            //Get address of local
+D=M             //Store in D
+@3              //Set A to the array pointer offset
+A=D+A           //Get address of array base + offset
+D=M             //Get the value from memory
+@SP
+A=M             //Dereference the stack pointer
+M=D             //Set the D value into SP
+@SP
+M=M+1           //Increment SP
+
+//Push temp or pointer argument -- push temp 2
+@7              //Put hardcoded address into A register
+D=M             //Dereference temp address
+@SP             //Get SP
+A=M             //Dereference SP
+M=D             //Put D into memory at SP
+@SP
+M=M+1           //Increment SP
+
+//Push static argument-- example push static 3
+@Xxx.3          //Address mnemonic
+D=M             //Store that value in D register
+@SP
+A=M             //Dereference SP
+M=D             //Push value to SP
+@SP
+M=M+1           //Increment SP
+
+//Pop local/argument/this/that--example is pop argument 2.
+@ARG
+D=M             //Set A to base address of ARG and get value
+@2
+D=D+A           //Get pointer to ARG + offset
+@R13
+M=D             //Store address in register 13
+@SP
+AM=M-1          //Get SP and dereference, decrement the pointer
+D=M             //Set D to last element in stack
+@R13
+A=M             //Get the address from R13
+M=D             //Store the value from D in pointer from R13
+
+//Pop temp or pointer argument -- example is pop temp 2
+@SP
+AM=M-1          //Get SP and dereference
+D=M             //Store popped value in D
+@5              //Address of temp 2 (hard-coded because it is known in advance)
+M=D             //Put D in memory at temp 2.
+
+//Pop static variable.  example pop static 3
+@SP
+AM=M-1          //Get SP and dereference, decrement SP
+D=M             //Pop end of stack value to D
+@Xxx.3          //Set static address (known in advance)
+M=D             //Put D's value in memory
